@@ -6,6 +6,7 @@ export class Usuario {
     this.email = email;
     this.telefone = telefone;
     this.cargo = cargo;
+    this.cursosComprados = [];
   }
 
   validarCPF() {
