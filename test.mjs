@@ -46,12 +46,13 @@ async function adicionarUsuario() {
     const cpfFormatado = formatarCPF(cpf);
 
     const nome = await askQuestion("Nome: ");
+    const dataNascimento = await askQuestion("Data de Nascimento (YYYY-MM-DD): "); 
     const email = await askQuestion("Email: ");
     const senha = await askQuestion("Senha: ");
     const cargo = String(await askQuestion("Cargo (Aluno, Professor, Administrador): ")) || "Não informado";
     const telefone = await askQuestion("Telefone (99999-9999): ");
 
-    if (!nome || !cpf || !email || !senha || !cargo || !telefone) {
+    if (!nome || !cpf || !email || !senha || !cargo || !telefone || !dataNascimento) {
       throw new Error("Todos os campos são obrigatórios.");
     }
 
@@ -68,7 +69,7 @@ async function adicionarUsuario() {
       throw new Error("CPF já cadastrado.");
     }
 
-    const usuario = new Usuario(nome, cpfFormatado, email, telefone, cargo);
+    const usuario = new Usuario(nome, cpfFormatado, dataNascimento, email,senha, telefone, cargo);
     await firestoreService.addDocument("usuarios", cpfSemFormatacao, usuario.toFirestore());
     console.log(`Usuário ${usuario.nome} salvo no Firebase Firestore com sucesso.`);
     await registerUser(email, senha, usuario);

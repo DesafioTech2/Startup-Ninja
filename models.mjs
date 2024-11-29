@@ -1,9 +1,10 @@
 export class Usuario {
-  constructor(nome, cpf, dataNascimento, email, telefone, cargo) {
+  constructor(nome, cpf, dataNascimento, email, senha,telefone, cargo) {
     this.nome = nome;
     this.cpf = cpf;
     this.dataNascimento = dataNascimento;
     this.email = email;
+    this.senha = senha; 
     this.telefone = telefone;
     this.cargo = cargo;
     this.cursosComprados = new Set(); 
@@ -33,6 +34,7 @@ export class Usuario {
       cpf: this.cpf,
       idade: this.calcularIdade(),
       email: this.email,
+      senha: this.senha,
       telefone: this.telefone,
       cargo: this.cargo,
     };
@@ -44,6 +46,7 @@ export class Usuario {
       cpf: this.cpf,
       dataNascimento: this.dataNascimento,
       email: this.email,
+      senha: this.senha,
       telefone: this.telefone,
       cargo: this.cargo,
       cursosComprados: Array.from(this.cursosComprados), 
