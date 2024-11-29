@@ -33,7 +33,7 @@ export async function registerUser(email, password, userData) {
 
     console.log("Usuário registrado com sucesso:", userId);
 
-    // Salvar dados adicionais no Firestore
+    
     await firestoreService.addDocument("usuarios", userId, { ...userData, email });
     console.log("Dados adicionais do usuário salvos no Firestore.");
   } catch (error) {
@@ -58,7 +58,7 @@ async function registrarCompra(emailUsuario, nomeCurso) {
       return;
     }
 
-    // Atualizar dados no Firestore
+    
     usuario.cursosComprados.push(nomeCurso);
     curso.usuariosInscritos.push(usuario.email);
 
@@ -88,46 +88,63 @@ async function visualizarHistoricoCompras(emailUsuario) {
     console.error("Erro ao visualizar histórico de compras:", error.message);
   }
 }
-
-// Função para adicionar um usuário
+// Função para formatar o CPF
+const formatarCPF = (cpf) => {
+  return cpf.replace(/\D/g, "") // Remove caracteres não numéricos
+            .replace(/(\d{3})(\d)/, "$1.$2") // Adiciona o primeiro ponto
+            .replace(/(\d{3})(\d)/, "$1.$2") // Adiciona o segundo ponto
+            .replace(/(\d{3})(\d{1,2})$/, "$1-$2"); // Adiciona o traço
+};
 async function adicionarUsuario() {
   try {
     console.log("Iniciando cadastro de usuário...");
+
+   
+    let cpf = await askQuestion("CPF (somente números): ");
+
     
-    // Coleta de dados do usuário
+    const cpfSemFormatacao = cpf.replace(/\D/g, "");
+
+    // Formatar o CPF apenas para a visualização
+    const cpfFormatado = formatarCPF(cpf);
+
     const nome = await askQuestion("Nome: ");
-    const cpf = await askQuestion("CPF: ");
     const email = await askQuestion("Email: ");
     const senha = await askQuestion("Senha: ");
-    const cargo = await askQuestion("Cargo (Aluno, Professor, Administrador): ");
+    const cargo = String(await askQuestion("Cargo (Aluno, Professor, Administrador): ")) || "Não informado";
     const telefone = await askQuestion("Telefone (99999-9999): ");
 
-    // Validação simples dos dados
+    // Validação dos dados
     if (!nome || !cpf || !email || !senha || !cargo || !telefone) {
       throw new Error("Todos os campos são obrigatórios.");
-    }
-
-    if (!/^\d{11}$/.test(cpf)) {
-      throw new Error("CPF inválido. Deve conter 11 dígitos numéricos.");
     }
 
     if (!/^\d{5}-\d{4}$/.test(telefone)) {
       throw new Error("Telefone inválido. Use o formato 99999-9999.");
     }
 
-    // Criação do objeto usuário
-    const usuario = new Usuario(nome, cpf, email, telefone, cargo);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw new Error("Email inválido.");
+    }
 
-    // Adiciona ao Firebase
-    await firestoreService.addDocument("usuarios", usuario.cpf, usuario.toFirestore());
-    console.log(`Usuário ${usuario.nome} salvo no Firebase com sucesso.`);
+    // Verificar se o CPF já existe
+    const usuariosExistentes = await firestoreService.getAllDocuments("usuarios");
+    if (usuariosExistentes.some((u) => u.cpf === cpfSemFormatacao)) {
+      throw new Error("CPF já cadastrado.");
+    }
 
-    // Registro no sistema
+    // Criar o objeto do usuário com o CPF sem formatação para Firestore
+    const usuario = new Usuario(nome, cpfFormatado, email, telefone, cargo);
+
+    // Adicionar ao Firestore com CPF sem formatação
+    await firestoreService.addDocument("usuarios", cpfSemFormatacao, usuario.toFirestore());
+    console.log(`Usuário ${usuario.nome} salvo no Firebase Firestore com sucesso.`);
+
+    // Registro no Firebase Auth
     await registerUser(email, senha, usuario);
     console.log(`Usuário ${usuario.nome} registrado no sistema com sucesso.`);
 
   } catch (error) {
-    // Tratamento de erros
     console.error("Erro ao adicionar usuário:", error.message);
   }
 }
