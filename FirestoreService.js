@@ -185,5 +185,20 @@ export class FirestoreService {
       throw error;
     }
   }
+  async getAllDocuments(collectionName) {
+    try {
+      const colRef = collection(this.db, collectionName);
+      const querySnapshot = await getDocs(colRef);
+      const documents = [];
+      querySnapshot.forEach((doc) => {
+        documents.push({ id: doc.id, ...doc.data() });
+      });
+      return documents;
+    } catch (error) {
+      console.error("Erro ao obter documentos:", error.message);
+    }
+  }
+
 }
+
 
