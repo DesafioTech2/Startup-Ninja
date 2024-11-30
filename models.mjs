@@ -1,12 +1,13 @@
 export class Usuario {
-  constructor(nome, cpf, dataNascimento, email, telefone, cargo) {
+  constructor(nome, cpf, dataNascimento, email, senha,telefone, cargo) {
     this.nome = nome;
     this.cpf = cpf;
     this.dataNascimento = dataNascimento;
     this.email = email;
+    this.senha = senha; 
     this.telefone = telefone;
     this.cargo = cargo;
-    this.cursosComprados = [];
+    this.cursosComprados = new Set(); 
   }
 
   validarCPF() {
@@ -16,7 +17,14 @@ export class Usuario {
 
   calcularIdade() {
     const nascimento = new Date(this.dataNascimento);
-    const idade = new Date().getFullYear() - nascimento.getFullYear();
+    const hoje = new Date();
+    let idade = hoje.getFullYear() - nascimento.getFullYear();
+    if (
+      hoje.getMonth() < nascimento.getMonth() ||
+      (hoje.getMonth() === nascimento.getMonth() && hoje.getDate() < nascimento.getDate())
+    ) {
+      idade--;
+    }
     return idade;
   }
 
@@ -26,6 +34,7 @@ export class Usuario {
       cpf: this.cpf,
       idade: this.calcularIdade(),
       email: this.email,
+      senha: this.senha,
       telefone: this.telefone,
       cargo: this.cargo,
     };
@@ -37,16 +46,21 @@ export class Usuario {
       cpf: this.cpf,
       dataNascimento: this.dataNascimento,
       email: this.email,
+      senha: this.senha,
       telefone: this.telefone,
       cargo: this.cargo,
-      cursosComprados: this.cursosComprados,
+      cursosComprados: Array.from(this.cursosComprados), 
     };
   }
 
   comprarCurso(curso) {
-    if (!this.cursosComprados.includes(curso.nome)) {
-      this.cursosComprados.push(curso.nome);
-      curso.adicionarUsuario(this.cpf); 
+    if (!curso || typeof curso !== "object" || !curso.nome) {
+      console.error("Curso inválido fornecido.");
+      return;
+    }
+    if (!this.cursosComprados.has(curso.nome)) {
+      this.cursosComprados.add(curso.nome);
+      curso.adicionarUsuario(this.cpf);
       console.log(`Curso "${curso.nome}" comprado com sucesso!`);
     } else {
       console.log(`O curso "${curso.nome}" já foi comprado por ${this.nome}.`);
@@ -73,7 +87,7 @@ export class Curso {
     this.nivel = nivel;
     this.instrutor = instrutor;
     this.urlImagem = urlImagem;
-    this.usuariosInscritos = [];
+    this.usuariosInscritos = new Set(); 
   }
 
   toFirestore() {
@@ -86,20 +100,16 @@ export class Curso {
       nivel: this.nivel,
       instrutor: this.instrutor,
       urlImagem: this.urlImagem,
-      usuariosInscritos: this.usuariosInscritos,
-    };
+      usuariosInscritos: Array.from(this.usuariosInscritos), 
+        };
   }
 
-  async adicionarUsuario(userId) {
-    if (!this.usuariosInscritos.includes(userId)) {
-      this.usuariosInscritos.push(userId);
-      await console.log(
-        `Usuário ${userId} adicionado ao curso "${this.nome}".`
-      );
+  adicionarUsuario(userId) {
+    if (!this.usuariosInscritos.has(userId)) {
+      this.usuariosInscritos.add(userId);
+      console.log(`Usuário ${userId} adicionado ao curso "${this.nome}".`);
     } else {
-      console.log(
-        `Usuário ${userId} já está inscrito no curso "${this.nome}".`
-      );
+      console.log(`Usuário ${userId} já está inscrito no curso "${this.nome}".`);
     }
   }
 }
