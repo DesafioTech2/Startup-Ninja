@@ -3,40 +3,67 @@ import { FirestoreService } from './FirestoreService.js';
 
 const firestoreService = new FirestoreService(firebaseConfig);
 
-async function ensureUserExists(userId, userData) {
-    try {
-      const userDoc = await firestoreService.getDocument('usuarios', userId);
-      if (!userDoc) {
-        console.log(`Usuário ${userId} não encontrado. Criando novo usuário...`);
-        await firestoreService.addDocument('usuarios', userId, userData);
-        console.log(`Usuário ${userId} criado com sucesso.`);
-      } else {
-        console.log(`Usuário ${userId} já existe.`);
-      }
-    } catch (error) {
-      console.error("Erro ao garantir existência do usuário:", error.message);
-    }
-  }  
+// Função para capturar entrada do usuário
+const askQuestion = (question) => {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
 
+  return new Promise((resolve) => {
+    rl.question(question, (answer) => {
+      rl.close();
+      resolve(answer.trim());
+    });
+  });
+};
 
-(async () => {
-    const cursos = [
-      { id: "curso1", titulo: "Curso de JavaScript", descricao: "Aprenda JavaScript do básico ao avançado", preco: 100.00 },
-      { id: "curso2", titulo: "Curso de Python", descricao: "Domine Python para ciência de dados", preco: 150.00 },
-      { id: "curso3", titulo: "Curso de React", descricao: "Crie aplicações modernas com React", preco: 200.00 }
-    ];
-  
-    try {
-      for (const curso of cursos) {
-        await firestoreService.addDocument('cursos', curso.id, curso);
-        console.log(`Curso ${curso.titulo} adicionado com sucesso.`);
+/* ===================================
+   Funções de Usuário e Cursos
+=================================== */
+
+// Formata o CPF no padrão 000.000.000-00
+const formatarCPF = (cpf) => {
+  return cpf.replace(/\D/g, "") // Remove caracteres não numéricos
+            .replace(/(\d{3})(\d)/, "$1.$2")
+            .replace(/(\d{3})(\d)/, "$1.$2")
+            .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+};
+
+// Adiciona um novo usuário ao sistema e registra no Firebase Auth
+export async function adicionarUsuario(dados) {
+  try {
+      console.log("Iniciando cadastro de usuário...");
+      const { cpf, nome, dataNascimento, email, senha, telefone, cargo } = dados;
+
+      if (!nome || !cpf || !email || !senha || !cargo || !telefone || !dataNascimento) {
+          throw new Error("Todos os campos são obrigatórios.");
       }
-    } catch (error) {
-      console.error("Erro ao adicionar cursos:", error.message);
-    }
-  })();
-  
-async function listCourses() {
+
+      if (!/^\d{5}-\d{4}$/.test(telefone)) {
+          throw new Error("Telefone inválido. Use o formato 99999-9999.");
+      }
+
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          throw new Error("Email inválido.");
+      }
+
+      const usuariosExistentes = await firestoreService.getAllDocuments("usuarios");
+      if (usuariosExistentes.some((u) => u.cpf === cpf)) {
+          throw new Error("CPF já cadastrado.");
+      }
+
+      const usuario = new Usuario(nome, cpf, dataNascimento, email, senha, telefone, cargo);
+      await firestoreService.addDocument("usuarios", cpf, usuario.toFirestore());
+      console.log(`Usuário ${usuario.nome} salvo no Firebase Firestore com sucesso.`);
+  } catch (error) {
+      console.error("Erro ao adicionar usuário:", error.message);
+      throw error; // Repassa o erro para ser tratado no formulário
+  }
+}
+
+// Adiciona um novo curso ao sistema
+async function adicionarCurso() {
   try {
     console.log("Listando cursos...");
     const courses = await firestoreService.getCollection('cursos');
