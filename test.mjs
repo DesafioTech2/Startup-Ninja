@@ -1,3 +1,8 @@
+
+/* ===================================
+   ROTINA EM CURSO BACK-END
+=================================== */
+
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { FirestoreService } from "./FirestoreService.js";
@@ -86,10 +91,16 @@ async function adicionarUsuario() {
 // Remove um usuário do sistema e do Firebase Auth com base no e-mail
 async function removerUsuario() {
   try {
-    const email = await askQuestion("Digite o e-mail do usuário que deseja remover: ");
-
-    // Busca todos os usuários na coleção 'usuarios'
+    const emailAdmin = await askQuestion("Confirme seu e-mail de administrador: ");
     const usuarios = await firestoreService.getAllDocuments("usuarios");
+    const admin = usuarios.find((u) => u.email === emailAdmin);
+
+    if (!admin || admin.cargo !== "Administrador") {
+      console.log("Permissão negada: Apenas Administradores podem remover usuários.");
+      return;
+    }
+
+    const email = await askQuestion("Digite o e-mail do usuário que deseja remover: ");
     const usuario = usuarios.find((u) => u.email === email);
 
     if (!usuario) {
@@ -97,18 +108,14 @@ async function removerUsuario() {
       return;
     }
 
-    
     const confirmacao = await askQuestion(`Tem certeza de que deseja remover o usuário "${usuario.nome}"? (S/N): `);
     if (confirmacao.toLowerCase() !== 's') {
       console.log("Ação cancelada.");
       return;
     }
 
-    
     await firestoreService.deleteDocument("usuarios", usuario.id);
-    console.log(`Usuário "${usuario.nome}" removido do sistema com sucesso.`);
-
-    console.log("Observação: a conta do Firebase Auth só pode ser removida usando o Admin SDK.");
+    console.log(`Usuário "${usuario.nome}" removido com sucesso.`);
   } catch (error) {
     console.error("Erro ao remover usuário:", error.message);
   }
@@ -119,6 +126,15 @@ async function removerUsuario() {
 // Adiciona um novo curso ao sistema
 async function adicionarCurso() {
   try {
+    const emailLogado = await askQuestion("Confirme seu e-mail: ");
+    const usuarios = await firestoreService.getAllDocuments("usuarios");
+    const usuarioAtual = usuarios.find((u) => u.email === emailLogado);
+
+    if (!usuarioAtual || (usuarioAtual.cargo !== "Professor" && usuarioAtual.cargo !== "Administrador")) {
+      console.log("Permissão negada: Apenas Professores ou Administradores podem adicionar cursos.");
+      return;
+    }
+
     const nome = await askQuestion("Nome do curso: ");
     const descricao = await askQuestion("Descrição: ");
     const duracao = await askQuestion("Duração (em horas): ");
@@ -136,7 +152,6 @@ async function adicionarCurso() {
       categoria,
       nivel,
       instrutor,
-      urlImagem,
       usuariosInscritos: [],
     };
 
@@ -324,61 +339,90 @@ async function logoutUser() {
 /* ===================================
    Menu Principal
 =================================== */
-
 async function menuPrincipal(emailLogado) {
-  while (true) {
-    console.log("\n=== Menu Principal ===");
-    console.log("1. Adicionar usuário");
-    console.log("2. Adicionar curso");
-    console.log("3. Realizar compra");
-    console.log("4. Visualizar histórico de compras");
-    console.log("5. Listar cursos");
-    console.log("6. Logout");
-    console.log("7. Sair");
-    console.log("8. Remover usuario:");
-    
+  try {
+    const usuarios = await firestoreService.getAllDocuments("usuarios");
+    const usuarioAtual = usuarios.find((u) => u.email === emailLogado);
 
-    const escolha = await askQuestion("Escolha uma opção: ");
-
-    try {
-      switch (escolha) {
-        case "1":
-          await adicionarUsuario();
-          break;
-        case "2":
-          await adicionarCurso();
-          break;
-        case "3":
-          const palavraChaveCurso = await askQuestion("Palavra-chave do curso: ");
-          await registrarCompra(emailLogado, palavraChaveCurso);
-          break;
-          break;
-        case "4":
-          await visualizarHistoricoCompras(emailLogado);
-          break;
-        case "6":
-          await logoutUser();
-          console.log("Encerrando sessão...");
-          return;
-        case "7":
-          console.log("Saindo...");
-          process.exit(0);
-        case  "5":
-          await listarCursos();
-        case "8":
-          await removerUsuario();
-        default:
-          console.log("Opção inválida.");
-      }
-    } catch (error) {
-      console.error("Erro ao executar a opção:", error.message);
+    if (!usuarioAtual) {
+      console.log("Usuário não encontrado.");
+      return;
     }
+
+    const { cargo } = usuarioAtual; // Aluno, Professor ou Administrador
+
+    while (true) {
+      console.log("\n=== Menu Principal ===");
+      console.log("1. Adicionar usuário");
+      console.log("2. Listar cursos");
+      console.log("3. Realizar compra");
+      console.log("4. Visualizar histórico de compras");
+      console.log("5. Logout");
+      console.log("6. Sair");
+
+      if (cargo === "Professor" || cargo === "Administrador") {
+        console.log("7. Adicionar curso");
+      }
+
+      if (cargo === "Administrador") {
+        console.log("8. Remover usuário");
+      }
+
+      const escolha = await askQuestion("Escolha uma opção: ");
+
+      try {
+        switch (escolha) {
+          case "1":
+            await adicionarUsuario();
+            break;
+          case "2":
+            await listarCursos();
+            break;
+          case "3":
+            const palavraChaveCurso = await askQuestion("Palavra-chave do curso: ");
+            await registrarCompra(emailLogado, palavraChaveCurso);
+            break;
+          case "4":
+            await visualizarHistoricoCompras(emailLogado);
+            break;
+          case "5":
+            await logoutUser();
+            console.log("Encerrando sessão...");
+            return;
+          case "6":
+            console.log("Saindo...");
+            process.exit(0);
+          case "7":
+            if (cargo === "Professor" || cargo === "Administrador") {
+              await adicionarCurso();
+            } else {
+              console.log("Permissão negada: Apenas Professores ou Administradores podem adicionar cursos.");
+            }
+            break;
+          case "8":
+            if (cargo === "Administrador") {
+              await removerUsuario();
+            } else {
+              console.log("Permissão negada: Apenas Administradores podem remover usuários.");
+            }
+            break;
+          default:
+            console.log("Opção inválida.");
+        }
+      } catch (error) {
+        console.error("Erro ao executar a opção:", error.message);
+      }
+    }
+  } catch (error) {
+    console.error("Erro ao carregar dados do usuário:", error.message);
   }
 }
 
 
 
-// Fluxo principal
+/* ===================================
+  FLUXO PRINCIPAL
+=================================== */
 (async () => {
   const session = loadSession();
   let emailLogado = session?.email;
@@ -396,7 +440,7 @@ async function menuPrincipal(emailLogado) {
           emailLogado = await loginUser();
           break;
         case "2":
-          emailLogado = await criarConta();
+          emailLogado = await adicionarUsuario();
           break;
         case "3":
           console.log("Saindo...");
