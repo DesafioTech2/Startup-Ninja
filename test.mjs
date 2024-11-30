@@ -293,20 +293,20 @@ async function registerUser(email, password) {
 }
 
 // Função para criar uma nova conta
-async function criarConta() {
-  try {
-    console.log("\n=== Criar Conta ===");
-    const email = await askQuestion("Email: ");
-    const senha = await askQuestion("Senha: ");
-    const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
-    console.log("Conta criada com sucesso:", userCredential.user.email);
-    saveSession({ email: userCredential.user.email });
-    return userCredential.user.email;
-  } catch (error) {
-    console.error("Erro ao criar conta:", error.message);
-    return null;
-  }
-}
+//async function criarConta() {
+  //try {
+    //console.log("\n=== Criar Conta ===");
+    //const email = await askQuestion("Email: ");
+    //const senha = await askQuestion("Senha: ");
+    //const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
+    //console.log("Conta criada com sucesso:", userCredential.user.email);
+    //saveSession({ email: userCredential.user.email });
+    //return userCredential.user.email;
+  //} catch (error) {
+   // console.error("Erro ao criar conta:", error.message);
+    //return null;
+  //}
+//}
 
 // Faz login do usuário
 async function loginUser() {
