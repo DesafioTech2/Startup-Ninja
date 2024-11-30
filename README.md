@@ -1,4 +1,4 @@
-# 📚 Sistema de Gerenciamento de Usuários e Cursos  
+# 📚 Rotina em Curso 
 
 Este projeto é uma aplicação interativa desenvolvida em **Node.js** que integra funcionalidades de autenticação e gerenciamento de dados utilizando **Firebase Authentication** e **Firestore**. O objetivo é permitir o gerenciamento de usuários e cursos em um ambiente seguro, eficiente e intuitivo.
 
