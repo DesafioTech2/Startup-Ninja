@@ -82,6 +82,40 @@ async function adicionarUsuario() {
   }
 }
 
+
+// Remove um usuário do sistema e do Firebase Auth com base no e-mail
+async function removerUsuario() {
+  try {
+    const email = await askQuestion("Digite o e-mail do usuário que deseja remover: ");
+
+    // Busca todos os usuários na coleção 'usuarios'
+    const usuarios = await firestoreService.getAllDocuments("usuarios");
+    const usuario = usuarios.find((u) => u.email === email);
+
+    if (!usuario) {
+      console.log("Usuário não encontrado.");
+      return;
+    }
+
+    
+    const confirmacao = await askQuestion(`Tem certeza de que deseja remover o usuário "${usuario.nome}"? (S/N): `);
+    if (confirmacao.toLowerCase() !== 's') {
+      console.log("Ação cancelada.");
+      return;
+    }
+
+    
+    await firestoreService.deleteDocument("usuarios", usuario.id);
+    console.log(`Usuário "${usuario.nome}" removido do sistema com sucesso.`);
+
+    console.log("Observação: a conta do Firebase Auth só pode ser removida usando o Admin SDK.");
+  } catch (error) {
+    console.error("Erro ao remover usuário:", error.message);
+  }
+}
+
+
+
 // Adiciona um novo curso ao sistema
 async function adicionarCurso() {
   try {
@@ -301,6 +335,7 @@ async function menuPrincipal(emailLogado) {
     console.log("5. Listar cursos");
     console.log("6. Logout");
     console.log("7. Sair");
+    console.log("8. Remover usuario:");
     
 
     const escolha = await askQuestion("Escolha uma opção: ");
@@ -330,6 +365,8 @@ async function menuPrincipal(emailLogado) {
           process.exit(0);
         case  "5":
           await listarCursos();
+        case "8":
+          await removerUsuario();
         default:
           console.log("Opção inválida.");
       }
